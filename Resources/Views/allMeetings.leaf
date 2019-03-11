@@ -1,0 +1,31 @@
+#set("title") { Meetings }
+
+#set("customCSS") { }
+
+#set("body") {
+    <div class="container">
+        <!-- Content here -->
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th scope="col">Subject</th>
+                    <th scope="col">Presenter</th>
+                </tr>
+            </thead>
+            <tbody>
+                #for(date in dates) {
+                    #valueDict("meetingsArray", meetings, date)
+                    <tr><td colspan="2"><h4>Meeting of #(date)</h4></td></tr>
+                    #for(meeting in meetingsArray) {
+                        <tr>
+                            <td>#(meeting.title)</td>
+                            <td>#(meeting.presenter)</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+#embed("base")

@@ -9,9 +9,11 @@ let package = Package(
 
         // 🍃 An expressive, performant, and extensible templating language built for Swift.
         .package(url: "https://github.com/vapor/leaf.git", from: "3.0.0"),
+        // 👤 Authentication and Authorization framework for Fluent.
+        .package(url: "https://github.com/vapor/auth.git", from: "2.0.0")
     ],
     targets: [
-        .target(name: "App", dependencies: ["Leaf", "Vapor"]),
+        .target(name: "App", dependencies: ["Leaf", "Vapor", "Authentication"]),
         .target(name: "Run", dependencies: ["App"]),
         .testTarget(name: "AppTests", dependencies: ["App"])
     ]
