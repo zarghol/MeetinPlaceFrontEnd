@@ -4,6 +4,8 @@ body, html {
 
 body {
 	font-family: sans-serif;
+    min-height: 50rem;
+    padding-top: 7rem;
 }
 
 div.welcome {

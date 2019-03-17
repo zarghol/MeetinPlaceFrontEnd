@@ -1,5 +1,5 @@
 //
-//  PublicMeeting.swift
+//  PublicTalk.swift
 //  App
 //
 //  Created by Clément NONN on 10/03/2019.
@@ -7,7 +7,7 @@
 
 import Vapor
 
-struct PublicMeeting {
+struct PublicTalk {
     var title: String
     /// The date of the meeting
     var presentationDate: String
@@ -15,6 +15,6 @@ struct PublicMeeting {
     var presenter: String
 }
 
-extension PublicMeeting: Content { }
+extension PublicTalk: Content { }
 
 

@@ -9,6 +9,8 @@ let package = Package(
 
         // 🍃 An expressive, performant, and extensible templating language built for Swift.
         .package(url: "https://github.com/vapor/leaf.git", from: "3.0.0"),
+        // 🔵 Swift ORM (queries, models, relations, etc) built on SQLite.
+        .package(url: "https://github.com/vapor/fluent-sqlite.git", from: "3.0.0"),
         // 👤 Authentication and Authorization framework for Fluent.
         .package(url: "https://github.com/vapor/auth.git", from: "2.0.0")
     ],

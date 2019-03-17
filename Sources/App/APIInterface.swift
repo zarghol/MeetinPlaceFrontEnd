@@ -24,21 +24,26 @@ final class APIInterface {
         self.baseUrl = baseUrl
     }
 
-    func meetings() -> Future<[PublicMeeting]> {
-        let url = self.url("meeting", "all")
-        return client.get(url).flatMap { try $0.content.decode([PublicMeeting].self) }
+    func talks() -> Future<[PublicTalk]> {
+        let url = self.url("talk", "all")
+        return client.get(url).flatMap { try $0.content.decode([PublicTalk].self) }
+    }
+
+    func myTalks(token: String) -> Future<[PublicTalk]> {
+        let url = self.url("talk")
+        return client.get(url, headers: ["Authorization": "Bearer \(token)"]).flatMap { try $0.content.decode([PublicTalk].self) }
     }
 
     func connexion(userRequest: PublicUserRequest) -> Future<User> {
-        let tokenUrl = self.url("user", "token")
+        let meUrl = self.url("user", "connect")
         let client = self.client
         let strongSelf = self
-        return client.post(tokenUrl, headers: ["Authorization": userRequest.basicAuth]).flatMap {
+        return client.get(meUrl, headers: ["Authorization": userRequest.basicAuth]).flatMap {
             if $0.http.status == .ok {
                 return try $0.content.decode(User.self)
             } else {
                 return strongSelf.signin(userRequest: userRequest).flatMap {
-                    client.post(tokenUrl, headers: ["Authorization": userRequest.basicAuth])
+                    client.post(meUrl, headers: ["Authorization": userRequest.basicAuth])
                 }.flatMap {
                     return try $0.content.decode(User.self)
                 }

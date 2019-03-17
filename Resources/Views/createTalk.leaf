@@ -1,0 +1,36 @@
+<div class="modal fade" id="createTalkModal" tabindex="-1" role="dialog" aria-labelledby="createTalkModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTalkModalLabel">New Talk</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" action="/createTalk">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="talk-title" class="col-form-label">Title :</label>
+                        <input type="text" class="form-control" id="talk-title">
+                    </div>
+                    <div class="form-group">
+                        <label for="talk-date" class="col-form-label">Date :</label>
+                        <input type="date" class="form-control" id="talk-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="talk-presenter" class="col-form-label">Presenter :</label>
+                        <select class="form-control" id="talk-presenter" #if(!isAdmin){ readonly }>
+                            #for(presenter in presenters) {
+                            <option>presenter</option>
+                            }
+                        </select>
+                    </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

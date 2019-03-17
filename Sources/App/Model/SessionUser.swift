@@ -14,8 +14,10 @@ struct User: Codable, SessionAuthenticatable {
     }
 
     static func authenticate(sessionID: String, on connection: DatabaseConnectable) -> EventLoopFuture<User?> {
-        return connection.future(User(token: sessionID))
+        return connection.future(User(token: sessionID, isAdmin: false, username: ""))
     }
 
     let token: String
+    let isAdmin: Bool
+    let username: String
 }

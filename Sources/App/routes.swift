@@ -2,33 +2,22 @@ import Vapor
 
 /// Register your application's routes here.
 public func routes(_ router: Router) throws {
-    // "It works" page
-    router.get { req in
-        return try req.view().render("welcome")
-    }
-    
-    // Says hello
-    router.get("hello", String.parameter) { req -> Future<View> in
-        return try req.view().render("hello", [
-            "name": req.parameters.next(String.self)
-        ])
-    }
-
     let controller = Controller()
 
     let authGroup = router.grouped(User.authSessionsMiddleware())
 
     router.get("meetings", use: controller.meetings)
-    authGroup.get("connexion", use: controller.connexion)
+
+    authGroup.get(use: controller.connexion)
     authGroup.post("connexion", use: controller.connect)
-    authGroup.get("home", use: controller.meetings)
+    authGroup.get("home", use: controller.myMeetings)
 }
 
 final class Controller {
     func meetings(_ req: Request) throws -> Future<View> {
         let api = try req.make(APIInterface.self)
-        return api.meetings().flatMap { meetings in
-            return try req.view().render("allMeetings", MeetingsView(meetings: meetings))
+        return api.talks().flatMap { talks in
+            return try req.view().render("allMeetings", MeetingsView(talks: talks))
         }
     }
 
@@ -51,20 +40,47 @@ final class Controller {
             try req.authenticate($0)
         }.transform(to: req.redirect(to: "home"))
     }
+
+    func myMeetings(_ req: Request) throws -> Future<Response> {
+        guard let user = try req.authenticated(User.self) else {
+            return req.future(req.redirect(to: "/"))
+        }
+        let api = try req.make(APIInterface.self)
+        return api.myTalks(token: user.token).flatMap { talks in
+            return try req.view().render("myMeetings", HomeView(meetingsView: MeetingsView(talks: talks), createTalkOptions: CreateTalkView(isAdmin: , presenters: )))
+        }.map { view in
+            return req.response(view.data, as: .html)
+        }
+    }
+}
+
+struct MeetingView: Encodable {
+    let talks: [PublicTalk]
+    let date: String
 }
 
 struct MeetingsView: Encodable {
-    let meetings: [String: [PublicMeeting]]
-    let dates: [String]
+    let meetings: [MeetingView]
 
-    init(meetings: [PublicMeeting]) {
-        self.meetings = [String: [PublicMeeting]](grouping: meetings, by: { $0.presentationDate })
-        self.dates = [String](self.meetings.keys)
+    init(talks: [PublicTalk]) {
+        let allTalks = [String: [PublicTalk]](grouping: talks, by: { $0.presentationDate })
+
+        self.meetings = allTalks.map { date, talks in MeetingView(talks: talks, date: date)}
     }
+}
+
+struct HomeView: Encodable {
+    let meetingsView: MeetingsView
+    let createTalkOptions: CreateTalkView
+}
+
+struct CreateTalkView: Encodable {
+    let isAdmin: Bool
+    let presenters: [String]
 }
 
 // Besoin de quoi ?
 // 1. Page de connexion
-// 2. Ajouter un meeting (édition)
+// 2. Ajouter un talk ( + édition)
 // 3. Liste de ses meetings (support édition / suppression)
 // 4. Liste des meetings par date

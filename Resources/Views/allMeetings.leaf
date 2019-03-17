@@ -1,4 +1,4 @@
-#set("title") { Meetings }
+#set("title") { Talks }
 
 #set("customCSS") { }
 
@@ -13,13 +13,12 @@
                 </tr>
             </thead>
             <tbody>
-                #for(date in dates) {
-                    #valueDict("meetingsArray", meetings, date)
-                    <tr><td colspan="2"><h4>Meeting of #(date)</h4></td></tr>
-                    #for(meeting in meetingsArray) {
+                #for(meeting in meetings) {
+                    <tr><td colspan="2"><h4>Meeting of #(meeting.date)</h4></td></tr>
+                    #for(talk in meeting.talks) {
                         <tr>
-                            <td>#(meeting.title)</td>
-                            <td>#(meeting.presenter)</td>
+                            <td>#(talk.title)</td>
+                            <td>#(talk.presenter)</td>
                         </tr>
                     }
                 }
