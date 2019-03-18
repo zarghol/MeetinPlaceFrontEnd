@@ -7,13 +7,13 @@
 
 import Vapor
 
-struct PublicUser {
+struct PublicUser: Codable {
     var username: String
 }
 
 extension PublicUser: Content { }
 
-struct PublicUserRequest {
+struct PublicUserRequest: Codable {
     var user: String
     var password: String
 }

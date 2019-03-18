@@ -7,7 +7,7 @@
 
 import Vapor
 
-struct PublicTalk {
+struct PublicTalk: Codable {
     var title: String
     /// The date of the meeting
     var presentationDate: String
@@ -17,8 +17,7 @@ struct PublicTalk {
 
 extension PublicTalk: Content { }
 
-
-struct PublicTalkRequest {
+struct PublicTalkRequest: Codable {
     var title: String
     var date: String
     var username: String?
