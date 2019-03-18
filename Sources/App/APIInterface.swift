@@ -29,9 +29,16 @@ final class APIInterface {
         return client.get(url).flatMap { try $0.content.decode([PublicTalk].self) }
     }
 
-    func myTalks(token: String) -> Future<[PublicTalk]> {
+    func myTalks(user: User) -> Future<[PublicTalk]> {
         let url = self.url("talk")
-        return client.get(url, headers: ["Authorization": "Bearer \(token)"]).flatMap { try $0.content.decode([PublicTalk].self) }
+        return client.get(url, headers: ["Authorization": user.bearerAuth]).flatMap { try $0.content.decode([PublicTalk].self) }
+    }
+
+    func usernames() -> Future<[String]> {
+        let url = self.url("users")
+        return client.get(url)
+            .flatMap { try $0.content.decode([PublicUser].self) }
+            .map { $0.map { $0.username } }
     }
 
     func connexion(userRequest: PublicUserRequest) -> Future<User> {
@@ -43,7 +50,7 @@ final class APIInterface {
                 return try $0.content.decode(User.self)
             } else {
                 return strongSelf.signin(userRequest: userRequest).flatMap {
-                    client.post(meUrl, headers: ["Authorization": userRequest.basicAuth])
+                    client.get(meUrl, headers: ["Authorization": userRequest.basicAuth])
                 }.flatMap {
                     return try $0.content.decode(User.self)
                 }
@@ -56,7 +63,25 @@ final class APIInterface {
         return client.post(userUrl, headers: ["Content-Type": "application/json"], beforeSend: { request in
             try request.content.encode(userRequest)
         }).map {
-            guard $0.http.status == .ok else { throw VaporError(identifier: "", reason: "") }
+            guard $0.http.status == .ok else { throw VaporError(identifier: "bad signing", reason: "return status not ok for sign in") }
+
+            return ()
+        }
+    }
+
+    func createTalk(talkRequest: PublicTalkRequest, user: User) -> Future<Void> {
+        let url = self.url("talk")
+        return client.post(
+            url,
+            headers: [
+                "Content-Type": "application/json",
+                "Authorization": user.bearerAuth
+            ],
+            beforeSend: { request in
+                try request.content.encode(talkRequest)
+            }
+        ).map {
+            guard [.ok, .created].contains($0.http.status) else { throw VaporError(identifier: "bad creation", reason: "return status not ok for creating a talk") }
 
             return ()
         }
@@ -64,12 +89,12 @@ final class APIInterface {
 }
 
 extension APIInterface: ServiceType {
-    enum Error: Debuggable {
+    enum Error: String, Debuggable {
         case apiVariablesNeeded
         case noUrl
 
         var identifier: String {
-            return "apiInterface.\(self)"
+            return "apiInterface.\(self.rawValue)"
         }
 
         var reason: String {

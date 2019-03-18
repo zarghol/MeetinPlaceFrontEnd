@@ -7,17 +7,23 @@
 
 import Vapor
 import Authentication
+import FluentSQLite
 
-struct User: Codable, SessionAuthenticatable {
-    var sessionID: String? {
-        return token
+struct User: SQLiteUUIDModel, SessionAuthenticatable {
+    var id: UUID? {
+        get { return token }
+        set { token = newValue }
     }
 
-    static func authenticate(sessionID: String, on connection: DatabaseConnectable) -> EventLoopFuture<User?> {
-        return connection.future(User(token: sessionID, isAdmin: false, username: ""))
-    }
-
-    let token: String
+    var token: UUID!
     let isAdmin: Bool
     let username: String
+}
+
+extension User: Migration { }
+
+extension User {
+    var bearerAuth: String {
+        return "Bearer \(token.uuidString)"
+    }
 }

@@ -15,7 +15,7 @@ let package = Package(
         .package(url: "https://github.com/vapor/auth.git", from: "2.0.0")
     ],
     targets: [
-        .target(name: "App", dependencies: ["Leaf", "Vapor", "Authentication"]),
+        .target(name: "App", dependencies: ["Leaf", "Vapor", "Authentication", "FluentSQLite"]),
         .target(name: "Run", dependencies: ["App"]),
         .testTarget(name: "AppTests", dependencies: ["App"])
     ]

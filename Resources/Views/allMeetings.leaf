@@ -3,7 +3,9 @@
 #set("customCSS") { }
 
 #set("body") {
-    <div class="container">
+#embed("navBar")
+    <main role="main" class="container">
+        <h1>All Meetings</h1>
         <!-- Content here -->
         <table class="table table-hover">
             <thead>
@@ -24,7 +26,10 @@
                 }
             </tbody>
         </table>
-    </div>
+    </main>
+    #if(isConnected) {
+        #embed("createTalk")
+    }
 }
 
 #embed("base")

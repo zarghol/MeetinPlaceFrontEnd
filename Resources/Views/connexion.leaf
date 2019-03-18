@@ -3,10 +3,16 @@
 #set("customCSS") { <link href="/styles/signin.css" rel="stylesheet"> }
 
 #set("body") {
+#embed("navBar")
     <form class="form-signin" method="post" action="/connexion">
         <h1 class="h1 font-weight-normal">Welcome to MeetingPlace,</h1>
         <h1 class="h3 mb-3 font-weight-normal">Please log in</h1>
-         (if the username doesn't exist, sign in)
+        (if the username doesn't exist, sign in)
+        #if(error) {
+        <div class="alert alert-danger" role="alert">
+        #(error)
+        </div>
+        }
         <label for="user" class="sr-only">Username</label>
         <input type="text" id="user" name="user" class="form-control" placeholder="Username" required autofocus>
         <label for="password" class="sr-only">Password</label>

@@ -18,3 +18,10 @@ struct PublicTalk {
 extension PublicTalk: Content { }
 
 
+struct PublicTalkRequest {
+    var title: String
+    var date: String
+    var username: String?
+}
+
+extension PublicTalkRequest: Content { }

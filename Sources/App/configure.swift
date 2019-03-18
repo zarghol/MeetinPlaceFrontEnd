@@ -1,11 +1,13 @@
 import Leaf
 import Vapor
 import Authentication
+import FluentSQLite
 
 /// Called before your application initializes.
 public func configure(_ config: inout Config, _ env: inout Environment, _ services: inout Services) throws {
     // Register providers first
     try services.register(LeafProvider())
+    try services.register(FluentSQLiteProvider())
     try services.register(AuthenticationProvider())
 
     services.register(APIInterface.self)
@@ -22,6 +24,12 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
         config.use(ValueDictTag(), as: "valueDict")
         return config
     }
+
+    let inMemoryDB = try SQLiteDatabase(storage: SQLiteStorage.memory)
+
+    var databases = DatabasesConfig()
+    databases.add(database: inMemoryDB, as: .sqlite)
+    services.register(databases)
     
     // Use Leaf for rendering views
     config.prefer(LeafRenderer.self, for: ViewRenderer.self)
@@ -32,4 +40,8 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     middlewares.use(ErrorMiddleware.self) // Catches errors and converts to HTTP response
     middlewares.use(SessionsMiddleware.self) // Allow to use the session for auth purpose
     services.register(middlewares)
+
+    var migrations = MigrationConfig()
+    migrations.add(model: User.self, database: .sqlite)
+    services.register(migrations)
 }

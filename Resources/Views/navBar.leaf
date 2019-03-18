@@ -1,0 +1,29 @@
+<nav class="navbar navbar-expand-md navbar-light fixed-top bg-light">
+    <a class="navbar-brand" href="#">Meeting Place</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+        <ul class="navbar-nav mr-auto">
+            #if(isConnected) {
+            <li class="nav-link">
+                <a class="nav-link" href="home">Home</a>
+            </li>
+            <li class="nav-link">
+                <a class="nav-link" data-toggle="modal" data-target="#createTalkModal" href="">Create a new Talk</a>
+            </li>
+            }
+            <li class="nav-link">
+                <a class="nav-link" href="meetings">All Meetings</a>
+            </li>
+        </ul>
+        #if(isConnected) {
+        <span class="navbar-text">
+            Welcome #(username)
+        </span>
+        <a class="btn btn-outline-danger ml-2 my-2" href="disconnect">Disconnect</a>
+        } else {
+        <a class="btn btn-outline-primary ml-2 my-2" href="/">Connexion</a>
+        }
+    </div>
+</nav>

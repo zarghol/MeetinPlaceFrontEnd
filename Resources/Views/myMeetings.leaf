@@ -2,23 +2,7 @@
 #set("customCSS") { }
 
 #set("body") {
-<nav class="navbar navbar-expand-md navbar-light fixed-top bg-light">
-    <a class="navbar-brand" href="#">Meeting Place</a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarCollapse">
-        <ul class="navbar-nav mr-auto">
-            <li class="nav-link active">
-                <a class="nav-link" href="#">My Meetings <span class="sr-only">(current)</span></a>
-            </li>
-            <li class="nav-link">
-                <a class="nav-link" data-toggle="modal" data-target="#createTalkModal" href="">Create a new Talk</a>
-            </li>
-        </ul>
-        <button class="btn btn-outline-danger my-2" type="button">Disconnect</button>
-    </div>
-</nav>
+#embed("navBar")
 <main role="main" class="container">
     <h1>My Meetings</h1>
     <table class="table table-hover">
@@ -29,7 +13,7 @@
             </tr>
         </thead>
         <tbody>
-            #for(meeting in meetings) {
+            #for(meeting in meetingsView.meetings) {
             <tr><td colspan="2"><h4>Meeting of #(meeting.date)</h4></td></tr>
             #for(talk in meeting.talks) {
             <tr>
