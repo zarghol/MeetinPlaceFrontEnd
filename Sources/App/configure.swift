@@ -34,6 +34,12 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     // Use Leaf for rendering views
     config.prefer(LeafRenderer.self, for: ViewRenderer.self)
 
+    // Commands
+
+    var commandConfig = CommandConfig.default()
+    commandConfig.use(EmptySessionsCommand(), as: "clearSessions")
+    services.register(commandConfig)
+
     // Register middleware
     var middlewares = MiddlewareConfig() // Create _empty_ middleware config
     middlewares.use(FileMiddleware.self) // Serves files from `Public/` directory

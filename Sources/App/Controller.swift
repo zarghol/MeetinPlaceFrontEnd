@@ -39,16 +39,23 @@ final class Controller {
         return userRequest.flatMap(to: User.self) { request in
             let api = try req.make(APIInterface.self)
             return api.connexion(userRequest: request)
-            }.flatMap {
-                $0.create(on: req)
-            } .map {
-                try req.authenticate($0)
-            }.transform(to: req.redirect(to: "home"))
-            .catchFlatMap({ error in
-                try req.view().render("connexion", ConnexionErrorView(error: "\(error)")).map {
-                    return req.response($0.data, as: .html)
-                }
-            })
+        }.with {
+            User.query(on: req).filter(\User.token, .equal, $0.token).first()
+        }.flatMap(to: User.self) {
+            if let existingUser = $1 {
+                return req.future(existingUser)
+            } else {
+                return $0.create(on: req)
+            }
+        }.map {
+            try req.authenticate($0)
+        }
+        .transform(to: req.redirect(to: "home"))
+        .catchFlatMap({ error in
+            try req.view().render("connexion", ConnexionErrorView(error: "\(error)")).map(to: Response.self) {
+                return req.response($0.data, as: .html)
+            }
+        })
     }
 
     func disconnect(_ req: Request) throws -> Future<Response> {

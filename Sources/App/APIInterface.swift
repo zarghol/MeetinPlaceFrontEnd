@@ -48,6 +48,8 @@ final class APIInterface {
         return client.get(meUrl, headers: ["Authorization": userRequest.basicAuth]).flatMap {
             if $0.http.status == .ok {
                 return try $0.content.decode(User.self)
+            } else if $0.http.status == .unauthorized {
+                throw VaporError(identifier: "Wrong Connexion", reason: "The username / password couple is not good")
             } else {
                 return strongSelf.signin(userRequest: userRequest).flatMap {
                     client.get(meUrl, headers: ["Authorization": userRequest.basicAuth])
@@ -63,7 +65,13 @@ final class APIInterface {
         return client.post(userUrl, headers: ["Content-Type": "application/json"], beforeSend: { request in
             try request.content.encode(userRequest)
         }).map {
-            guard $0.http.status == .ok else { throw VaporError(identifier: "bad signing", reason: "return status not ok for sign in") }
+            guard $0.http.status != .badRequest else {
+                throw VaporError(identifier: "couldn't create user", reason: "this user may already exist")
+            }
+
+            guard $0.http.status == .ok else {
+                throw VaporError(identifier: "couldn't create user", reason: "return status not ok for sign in")
+            }
 
             return ()
         }
