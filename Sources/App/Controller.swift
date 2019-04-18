@@ -53,7 +53,8 @@ final class Controller {
         }
         .transform(to: req.redirect(to: "home"))
         .catchFlatMap({ error in
-            try req.view().render("connexion", ConnexionErrorView(error: "\(error)")).map(to: Response.self) {
+            let errorText: String = (error as? Debuggable)?.reason ?? "\(error)"
+            return try req.view().render("connexion", ConnexionErrorView(error: errorText)).map(to: Response.self) {
                 return req.response($0.data, as: .html)
             }
         })
