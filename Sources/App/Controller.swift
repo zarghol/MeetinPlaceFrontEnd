@@ -39,9 +39,8 @@ final class Controller {
         return userRequest.flatMap(to: User.self) { request in
             let api = try req.make(APIInterface.self)
             return api.connexion(userRequest: request)
-        }.with(type: Optional<User>.self) {
-            let path = \User.token
-            return User.query(on: req).filter(path, .equal, $0.token).first()
+        }.with {
+            User.query(on: req).filter(\User.token, .equal, $0.token).first()
         }.flatMap(to: User.self) {
             if let existingUser = $1 {
                 return req.future(existingUser)

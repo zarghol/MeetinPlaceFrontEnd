@@ -52,9 +52,7 @@ final class APIInterface {
             case .ok:
                 return try response.content.decode(User.self)
             case .unauthorized:
-                throw VaporError(identifier: "Wrong Connexion", reason: "The username / password couple is not good")
-            case .internalServerError:
-                throw VaporError(identifier: "Wrong Connexion", reason: "Sorry, the API couldn't respond. Try again...")
+                throw Error.badPassword
             case .preconditionFailed:
                 return strongSelf.signin(userRequest: userRequest).flatMap {
                     client.get(meUrl, headers: ["Authorization": userRequest.basicAuth])
@@ -63,7 +61,7 @@ final class APIInterface {
                 }
             default:
                 self?.logger.error("this is an error to catch : \(response.debugDescription)")
-                throw VaporError(identifier: "Wrong Connexion", reason: "Unknown response : \(response.debugDescription)")
+                throw Error.genericError
             }
         }
     }
@@ -73,14 +71,9 @@ final class APIInterface {
         return client.post(userUrl, headers: ["Content-Type": "application/json"], beforeSend: { request in
             try request.content.encode(userRequest)
         }).map { [weak self] response in
-            guard response.http.status != .badRequest else {
-                self?.logger.warning("User not created : \(response.debugDescription)")
-                throw VaporError(identifier: "couldn't create user", reason: "this user may already exist")
-            }
-
             guard response.http.status == .ok else {
                 self?.logger.warning("User not created : \(response.debugDescription)")
-                throw VaporError(identifier: "couldn't create user", reason: "return status not ok for sign in")
+                throw Error.couldntSignIn
             }
 
             return ()
@@ -98,8 +91,11 @@ final class APIInterface {
             beforeSend: { request in
                 try request.content.encode(talkRequest)
             }
-        ).map {
-            guard [.ok, .created].contains($0.http.status) else { throw VaporError(identifier: "bad creation", reason: "return status not ok for creating a talk") }
+        ).map { [weak self] response in
+            guard [.ok, .created].contains(response.http.status) else {
+                self?.logger.warning("Talk not created : \(response.debugDescription)")
+                throw Error.couldntCreateTalk
+            }
 
             return ()
         }
@@ -110,6 +106,10 @@ extension APIInterface: ServiceType {
     enum Error: String, Debuggable {
         case apiVariablesNeeded
         case noUrl
+        case badPassword
+        case genericError
+        case couldntSignIn
+        case couldntCreateTalk
 
         var identifier: String {
             return "apiInterface.\(self.rawValue)"
@@ -117,6 +117,14 @@ extension APIInterface: ServiceType {
 
         var reason: String {
             switch self {
+            case .couldntCreateTalk:
+                return "return status not ok for creating a talk"
+            case .couldntSignIn:
+                return "return status not ok for sign in"
+            case .genericError:
+                return "Sorry, the API couldn't respond. Try again..."
+            case .badPassword:
+                return "The username / password couple is not good"
             case .apiVariablesNeeded:
                 return "the environment variables for api hostname and port isn't set. please provide these informations"
             case .noUrl:
