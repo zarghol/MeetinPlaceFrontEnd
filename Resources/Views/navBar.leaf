@@ -16,6 +16,9 @@
             <li class="nav-link">
                 <a class="nav-link" href="meetings">All Meetings</a>
             </li>
+            <li class="nav-link">
+                <a class="nav-link" href="https://github.com/zarghol/MeetingPlaceBackEnd/issues/new" target="_blank">Report a Bug</a>
+            </li>
         </ul>
         #if(isConnected) {
         <span class="navbar-text">

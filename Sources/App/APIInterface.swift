@@ -9,6 +9,7 @@ import Vapor
 
 final class APIInterface {
     let client: Client
+    let logger: Logger
     let baseUrl: URL
 
     private func url(_ paths: String...) -> URL {
@@ -19,8 +20,9 @@ final class APIInterface {
         return url
     }
 
-    init(client: Client, baseUrl: URL) {
+    init(client: Client, logger: Logger, baseUrl: URL) {
         self.client = client
+        self.logger = logger
         self.baseUrl = baseUrl
     }
 
@@ -45,17 +47,21 @@ final class APIInterface {
         let meUrl = self.url("user", "connect")
         let client = self.client
         let strongSelf = self
-        return client.get(meUrl, headers: ["Authorization": userRequest.basicAuth]).flatMap {
-            if $0.http.status == .ok {
-                return try $0.content.decode(User.self)
-            } else if $0.http.status == .unauthorized {
-                throw VaporError(identifier: "Wrong Connexion", reason: "The username / password couple is not good")
-            } else {
+        return client.get(meUrl, headers: ["Authorization": userRequest.basicAuth]).flatMap { [weak self] response in
+            switch response.http.status {
+            case .ok:
+                return try response.content.decode(User.self)
+            case .unauthorized:
+                throw Error.badPassword
+            case .preconditionFailed:
                 return strongSelf.signin(userRequest: userRequest).flatMap {
                     client.get(meUrl, headers: ["Authorization": userRequest.basicAuth])
                 }.flatMap {
                     return try $0.content.decode(User.self)
                 }
+            default:
+                self?.logger.error("this is an error to catch : \(response.debugDescription)")
+                throw Error.genericError
             }
         }
     }
@@ -64,13 +70,10 @@ final class APIInterface {
         let userUrl = self.url("user")
         return client.post(userUrl, headers: ["Content-Type": "application/json"], beforeSend: { request in
             try request.content.encode(userRequest)
-        }).map {
-            guard $0.http.status != .badRequest else {
-                throw VaporError(identifier: "couldn't create user", reason: "this user may already exist")
-            }
-
-            guard $0.http.status == .ok else {
-                throw VaporError(identifier: "couldn't create user", reason: "return status not ok for sign in")
+        }).map { [weak self] response in
+            guard response.http.status == .ok else {
+                self?.logger.warning("User not created : \(response.debugDescription)")
+                throw Error.couldntSignIn
             }
 
             return ()
@@ -88,8 +91,11 @@ final class APIInterface {
             beforeSend: { request in
                 try request.content.encode(talkRequest)
             }
-        ).map {
-            guard [.ok, .created].contains($0.http.status) else { throw VaporError(identifier: "bad creation", reason: "return status not ok for creating a talk") }
+        ).map { [weak self] response in
+            guard [.ok, .created].contains(response.http.status) else {
+                self?.logger.warning("Talk not created : \(response.debugDescription)")
+                throw Error.couldntCreateTalk
+            }
 
             return ()
         }
@@ -100,6 +106,10 @@ extension APIInterface: ServiceType {
     enum Error: String, Debuggable {
         case apiVariablesNeeded
         case noUrl
+        case badPassword
+        case genericError
+        case couldntSignIn
+        case couldntCreateTalk
 
         var identifier: String {
             return "apiInterface.\(self.rawValue)"
@@ -107,6 +117,14 @@ extension APIInterface: ServiceType {
 
         var reason: String {
             switch self {
+            case .couldntCreateTalk:
+                return "return status not ok for creating a talk"
+            case .couldntSignIn:
+                return "return status not ok for sign in"
+            case .genericError:
+                return "Sorry, the API couldn't respond. Try again..."
+            case .badPassword:
+                return "The username / password couple is not good"
             case .apiVariablesNeeded:
                 return "the environment variables for api hostname and port isn't set. please provide these informations"
             case .noUrl:
@@ -117,6 +135,7 @@ extension APIInterface: ServiceType {
 
     static func makeService(for container: Container) throws -> APIInterface {
         let client = try container.client()
+        let logger = try container.make(Logger.self)
         guard let hostname = Environment.get("api_hostname"),
             let port = Environment.get("api_port") else {
             throw Error.apiVariablesNeeded
@@ -125,6 +144,6 @@ extension APIInterface: ServiceType {
         guard let url = URL(string: "\(hostname):\(port)") else {
             throw Error.noUrl
         }
-        return APIInterface(client: client, baseUrl: url)
+        return APIInterface(client: client, logger: logger, baseUrl: url)
     }
 }
