@@ -12,9 +12,9 @@ struct MeetingsView: Encodable {
     let connexionState: ConnectedState?
 
     init(talks: [PublicTalk], connexionState: ConnectedState? = nil) {
-        let allTalks = [String: [PublicTalk]](grouping: talks, by: { $0.presentationDate })
+        let allTalks = [Date: [PublicTalk]](grouping: talks, by: { $0.presentationDate })
 
-        self.meetings = allTalks.map { date, talks in MeetingView(talks: talks, date: date)}
+        self.meetings = allTalks.map { date, talks in MeetingView(talks: talks, date: date)}.sorted { $0.date > $1.date }
         self.connexionState = connexionState
     }
 

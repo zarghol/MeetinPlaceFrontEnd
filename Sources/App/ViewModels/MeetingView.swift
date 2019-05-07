@@ -9,5 +9,5 @@ import Foundation
 
 struct MeetingView: Encodable {
     let talks: [PublicTalk]
-    let date: String
+    let date: Date
 }
