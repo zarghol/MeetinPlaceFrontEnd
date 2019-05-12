@@ -10,7 +10,7 @@ import Vapor
 struct PublicTalk: Codable {
     var title: String
     /// The date of the meeting
-    var presentationDate: String
+    var presentationDate: Date
     /// the presenter that make the show 😎
     var presenter: String
 }

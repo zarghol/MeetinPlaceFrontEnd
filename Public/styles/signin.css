@@ -13,6 +13,10 @@ body {
     background-color: #f5f5f5;
 }
 
+.version {
+    color: #99a3ad;
+}
+
 .form-signin {
     width: 100%;
     max-width: 430px;

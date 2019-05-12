@@ -9,10 +9,10 @@ import Foundation
 
 enum ConnectedState: Encodable {
     case connected(username: String, createTalkOptions: CreateTalkView)
-    case disconnected
+    case disconnected(version: String)
 
     enum CodingKeys: String, CodingKey {
-        case username, isConnected, createTalkOptions
+        case username, isConnected, createTalkOptions, version
     }
 
     func encode(to encoder: Encoder) throws {
@@ -23,8 +23,9 @@ enum ConnectedState: Encodable {
             try container.encode(username, forKey: .username)
             try container.encode(createTalkOptions, forKey: .createTalkOptions)
             try container.encode(true, forKey: .isConnected)
-        case .disconnected:
+        case .disconnected(let version):
             try container.encode(false, forKey: .isConnected)
+            try container.encode(version, forKey: .version)
         }
     }
 }
