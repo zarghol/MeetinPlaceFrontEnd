@@ -20,7 +20,7 @@ final class Controller {
             }
             }.and(api.talks())
             .flatMap { connexionState, talks in
-                return try req.view().render("allMeetings", MeetingsView(talks: talks, connexionState: connexionState))
+                return try req.view().render("allMeetings", MeetingsView(talks: talks, connexionState: connexionState, locale: req.locale))
         }
     }
 
@@ -73,17 +73,19 @@ final class Controller {
         guard let user = try req.authenticated(User.self) else {
             return req.future(req.redirect(to: "/"))
         }
+
         let api = try req.make(APIInterface.self)
         return api.myTalks(user: user).and(api.usernames()).flatMap { talks, usernames in
             return try req.view().render("myMeetings", HomeView(
-                meetingsView: MeetingsView(talks: talks),
+                meetingsView: MeetingsView(talks: talks, locale: req.locale),
                 connexionState: .connected(
                     username: user.username,
                     createTalkOptions: CreateTalkView(isAdmin: user.isAdmin, presenters: usernames)
-                )
+                ),
+                locale: req.locale
             ))
-            }.map { view in
-                return req.response(view.data, as: .html)
+        }.map { view in
+            return req.response(view.data, as: .html)
         }
     }
 
@@ -95,8 +97,8 @@ final class Controller {
 
         return try req.content.decode(PublicTalkRequest.self).flatMap {
             api.createTalk(talkRequest: $0, user: user)
-            }.map { _ in
-                req.redirect(to: "home")
+        }.map { _ in
+            req.redirect(to: "home")
         }
     }
 }

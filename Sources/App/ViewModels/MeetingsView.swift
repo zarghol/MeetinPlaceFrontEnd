@@ -7,15 +7,17 @@
 
 import Foundation
 
-struct MeetingsView: Encodable {
+struct MeetingsView: Encodable, LocalizedView {
     let meetings: [MeetingView]
     let connexionState: ConnectedState?
+    let locale: Locale
 
-    init(talks: [PublicTalk], connexionState: ConnectedState? = nil) {
+    init(talks: [PublicTalk], connexionState: ConnectedState? = nil, locale: Locale) {
         let allTalks = [Date: [PublicTalk]](grouping: talks, by: { $0.presentationDate })
 
         self.meetings = allTalks.map { date, talks in MeetingView(talks: talks, date: date)}.sorted { $0.date > $1.date }
         self.connexionState = connexionState
+        self.locale = locale
     }
 
     enum CodingKeys: String, CodingKey {
@@ -26,6 +28,7 @@ struct MeetingsView: Encodable {
         var container = encoder.container(keyedBy: CodingKeys.self)
 
         try container.encode(meetings, forKey: .meetings)
+        try encodeLocale(with: encoder)
         if let connexionState = connexionState {
             try connexionState.encode(to: encoder)
         }
