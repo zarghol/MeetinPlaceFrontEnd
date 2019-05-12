@@ -13,7 +13,7 @@ struct HomeView: Encodable, LocalizedView {
     let locale: Locale
 
     enum CodingKeys: String, CodingKey {
-        case meetingsView, createTalkOptions, locale
+        case meetingsView, createTalkOptions
     }
 
     func encode(to encoder: Encoder) throws {

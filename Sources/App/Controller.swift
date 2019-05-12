@@ -16,7 +16,7 @@ final class Controller {
                     username: user.username,
                     createTalkOptions: CreateTalkView(isAdmin: user.isAdmin, presenters: usernames))
             } else {
-                return .disconnected
+                return .disconnected(version: Constants.versionNumber)
             }
             }.and(api.talks())
             .flatMap { connexionState, talks in
@@ -28,7 +28,7 @@ final class Controller {
         guard try !req.isAuthenticated(User.self) else {
             return req.future(req.redirect(to: "home"))
         }
-        return try req.view().render("connexion", ConnectedState.disconnected).map {
+        return try req.view().render("connexion", ConnectedState.disconnected(version: Constants.versionNumber)).map {
             return req.response($0.data, as: .html)
         }
     }
