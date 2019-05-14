@@ -10,7 +10,7 @@ import Vapor
 final class Controller {
     func meetings(_ req: Request) throws -> Future<View> {
         let api = try req.make(APIInterface.self)
-        return api.usernames().map { usernames in
+        return api.usernames(client: try req.client()).map { usernames in
             if let user = try req.authenticated(User.self) {
                 return .connected(
                     username: user.username,
@@ -18,9 +18,9 @@ final class Controller {
             } else {
                 return .disconnected(version: Constants.versionNumber)
             }
-            }.and(api.talks())
-            .flatMap { connexionState, talks in
-                return try req.view().render("allMeetings", MeetingsView(talks: talks, connexionState: connexionState, locale: req.locale))
+        }.and(api.talks(client: try req.client()))
+        .flatMap { connexionState, talks in
+            return try req.view().render("allMeetings", MeetingsView(talks: talks, connexionState: connexionState, locale: req.locale))
         }
     }
 
@@ -38,7 +38,7 @@ final class Controller {
 
         return userRequest.flatMap(to: User.self) { request in
             let api = try req.make(APIInterface.self)
-            return api.connexion(userRequest: request)
+            return api.connexion(client: try req.client(), userRequest: request)
         }.with {
             User.query(on: req).filter(\User.token, .equal, $0.token).first()
         }.flatMap(to: User.self) {
@@ -75,7 +75,7 @@ final class Controller {
         }
 
         let api = try req.make(APIInterface.self)
-        return api.myTalks(user: user).and(api.usernames()).flatMap { talks, usernames in
+        return api.myTalks(client: try req.client(), user: user).and(api.usernames(client: try req.client())).flatMap { talks, usernames in
             return try req.view().render("myMeetings", HomeView(
                 meetingsView: MeetingsView(talks: talks, locale: req.locale),
                 connexionState: .connected(
@@ -96,7 +96,7 @@ final class Controller {
         let api = try req.make(APIInterface.self)
 
         return try req.content.decode(PublicTalkRequest.self).flatMap {
-            api.createTalk(talkRequest: $0, user: user)
+            api.createTalk(client: try req.client(), talkRequest: $0, user: user)
         }.map { _ in
             req.redirect(to: "home")
         }
