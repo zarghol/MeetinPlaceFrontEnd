@@ -16,7 +16,7 @@
             </thead>
             <tbody>
                 #for(meeting in meetings) {
-                    <tr><td colspan="2"><h4>Meeting of #(meeting.date)</h4></td></tr>
+                    <tr><td colspan="2"><h4>Meeting of #date(meeting.date, "dd/MM/yyyy")</h4></td></tr>
                     #for(talk in meeting.talks) {
                         <tr>
                             <td>#(talk.title)</td>

@@ -12,6 +12,14 @@ final class APIInterface {
     let logger: Logger
     let baseUrl: URL
 
+    let basicDateDecoder: JSONDecoder = {
+        let decoder = JSONDecoder()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "dd-MM-yyyy"
+        decoder.dateDecodingStrategy = .formatted(dateFormatter)
+        return decoder
+    }()
+
     private func url(_ paths: String...) -> URL {
         var url = baseUrl
         for path in paths {
@@ -28,12 +36,14 @@ final class APIInterface {
 
     func talks() -> Future<[PublicTalk]> {
         let url = self.url("talk", "all")
-        return client.get(url).flatMap { try $0.content.decode([PublicTalk].self) }
+        let decoder = self.basicDateDecoder
+        return client.get(url).flatMap { try $0.content.decode([PublicTalk].self, using: decoder) }
     }
 
     func myTalks(user: User) -> Future<[PublicTalk]> {
         let url = self.url("talk")
-        return client.get(url, headers: ["Authorization": user.bearerAuth]).flatMap { try $0.content.decode([PublicTalk].self) }
+        let decoder = self.basicDateDecoder
+        return client.get(url, headers: ["Authorization": user.bearerAuth]).flatMap { try $0.content.decode([PublicTalk].self, using: decoder) }
     }
 
     func usernames() -> Future<[String]> {
