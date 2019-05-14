@@ -8,7 +8,6 @@
 import Vapor
 
 final class APIInterface {
-    let client: Client
     let logger: Logger
     let baseUrl: URL
 
@@ -28,34 +27,63 @@ final class APIInterface {
         return url
     }
 
-    init(client: Client, logger: Logger, baseUrl: URL) {
-        self.client = client
+    init(logger: Logger, baseUrl: URL) {
         self.logger = logger
         self.baseUrl = baseUrl
     }
 
-    func talks() -> Future<[PublicTalk]> {
+    func use(_ client: Client) -> Instance {
+        return Instance(client: client, interface: self)
+    }
+
+    struct Instance {
+        let client: Client
+        unowned var interface: APIInterface
+
+        private func clientify<R>(_ method: @escaping (Client) -> R) -> (() -> R) {
+            let client = self.client
+            return { return method(client) }
+        }
+
+        private func clientify<A, R>(_ method: @escaping (Client, A) -> R) -> ((A) -> R) {
+            let client = self.client
+            return { a in return method(client, a) }
+        }
+
+        private func clientify<A, B, R>(_ method: @escaping (Client, A, B) -> R) -> ((A, B) -> R) {
+            let client = self.client
+            return { a, b in return method(client, a, b) }
+        }
+
+        var talks: () -> Future<[PublicTalk]> { return clientify(interface.talks) }
+        var myTalks: (User) -> Future<[PublicTalk]> { return clientify(interface.myTalks) }
+        var usernames: () -> Future<[String]> { return clientify(interface.usernames) }
+        var connexion: (PublicUserRequest) -> Future<User> { return clientify(interface.connexion) }
+        var signin: (PublicUserRequest) -> Future<Void> { return clientify(interface.signin) }
+        var createTalk: (PublicTalkRequest, User) -> Future<Void> { return clientify(interface.createTalk) }
+    }
+
+    func talks(client: Client) -> Future<[PublicTalk]> {
         let url = self.url("talk", "all")
         let decoder = self.basicDateDecoder
         return client.get(url).flatMap { try $0.content.decode([PublicTalk].self, using: decoder) }
     }
 
-    func myTalks(user: User) -> Future<[PublicTalk]> {
+    func myTalks(client: Client, user: User) -> Future<[PublicTalk]> {
         let url = self.url("talk")
         let decoder = self.basicDateDecoder
         return client.get(url, headers: ["Authorization": user.bearerAuth]).flatMap { try $0.content.decode([PublicTalk].self, using: decoder) }
     }
 
-    func usernames() -> Future<[String]> {
+    func usernames(client: Client) -> Future<[String]> {
         let url = self.url("users")
         return client.get(url)
             .flatMap { try $0.content.decode([PublicUser].self) }
             .map { $0.map { $0.username } }
     }
 
-    func connexion(userRequest: PublicUserRequest) -> Future<User> {
+    func connexion(client: Client, userRequest: PublicUserRequest) -> Future<User> {
         let meUrl = self.url("user", "connect")
-        let client = self.client
         let strongSelf = self
         return client.get(meUrl, headers: ["Authorization": userRequest.basicAuth]).flatMap { [weak self] response in
             switch response.http.status {
@@ -64,7 +92,7 @@ final class APIInterface {
             case .unauthorized:
                 throw Error.badPassword
             case .preconditionFailed:
-                return strongSelf.signin(userRequest: userRequest).flatMap {
+                return strongSelf.signin(client: client, userRequest: userRequest).flatMap {
                     client.get(meUrl, headers: ["Authorization": userRequest.basicAuth])
                 }.flatMap {
                     return try $0.content.decode(User.self)
@@ -76,7 +104,7 @@ final class APIInterface {
         }
     }
 
-    func signin(userRequest: PublicUserRequest) -> Future<Void> {
+    func signin(client: Client, userRequest: PublicUserRequest) -> Future<Void> {
         let userUrl = self.url("user")
         return client.post(userUrl, headers: ["Content-Type": "application/json"], beforeSend: { request in
             try request.content.encode(userRequest)
@@ -90,7 +118,7 @@ final class APIInterface {
         }
     }
 
-    func createTalk(talkRequest: PublicTalkRequest, user: User) -> Future<Void> {
+    func createTalk(client: Client, talkRequest: PublicTalkRequest, user: User) -> Future<Void> {
         let url = self.url("talk")
         return client.post(
             url,
@@ -144,7 +172,6 @@ extension APIInterface: ServiceType {
     }
 
     static func makeService(for container: Container) throws -> APIInterface {
-        let client = try container.client()
         let logger = try container.make(Logger.self)
         guard let hostname = Environment.get("api_hostname"),
             let port = Environment.get("api_port") else {
@@ -154,6 +181,6 @@ extension APIInterface: ServiceType {
         guard let url = URL(string: "\(hostname):\(port)") else {
             throw Error.noUrl
         }
-        return APIInterface(client: client, logger: logger, baseUrl: url)
+        return APIInterface(logger: logger, baseUrl: url)
     }
 }

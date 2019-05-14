@@ -9,7 +9,7 @@ import Vapor
 
 final class Controller {
     func meetings(_ req: Request) throws -> Future<View> {
-        let api = try req.make(APIInterface.self)
+        let api = try req.make(APIInterface.self).use(try req.client())
         return api.usernames().map { usernames in
             if let user = try req.authenticated(User.self) {
                 return .connected(
@@ -18,9 +18,9 @@ final class Controller {
             } else {
                 return .disconnected(version: Constants.versionNumber)
             }
-            }.and(api.talks())
-            .flatMap { connexionState, talks in
-                return try req.view().render("allMeetings", MeetingsView(talks: talks, connexionState: connexionState, locale: req.locale))
+        }.and(api.talks())
+        .flatMap { connexionState, talks in
+            return try req.view().render("allMeetings", MeetingsView(talks: talks, connexionState: connexionState, locale: req.locale))
         }
     }
 
@@ -37,8 +37,8 @@ final class Controller {
         let userRequest = try req.content.decode(PublicUserRequest.self)
 
         return userRequest.flatMap(to: User.self) { request in
-            let api = try req.make(APIInterface.self)
-            return api.connexion(userRequest: request)
+            let api = try req.make(APIInterface.self).use(try req.client())
+            return api.connexion(request)
         }.with {
             User.query(on: req).filter(\User.token, .equal, $0.token).first()
         }.flatMap(to: User.self) {
@@ -74,8 +74,8 @@ final class Controller {
             return req.future(req.redirect(to: "/"))
         }
 
-        let api = try req.make(APIInterface.self)
-        return api.myTalks(user: user).and(api.usernames()).flatMap { talks, usernames in
+        let api = try req.make(APIInterface.self).use(try req.client())
+        return api.myTalks(user).and(api.usernames()).flatMap { talks, usernames in
             return try req.view().render("myMeetings", HomeView(
                 meetingsView: MeetingsView(talks: talks, locale: req.locale),
                 connexionState: .connected(
@@ -93,10 +93,10 @@ final class Controller {
         guard let user = try req.authenticated(User.self) else {
             return req.future(req.redirect(to: "/"))
         }
-        let api = try req.make(APIInterface.self)
+        let api = try req.make(APIInterface.self).use(try req.client())
 
         return try req.content.decode(PublicTalkRequest.self).flatMap {
-            api.createTalk(talkRequest: $0, user: user)
+            api.createTalk($0, user)
         }.map { _ in
             req.redirect(to: "home")
         }
