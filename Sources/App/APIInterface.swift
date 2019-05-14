@@ -32,6 +32,37 @@ final class APIInterface {
         self.baseUrl = baseUrl
     }
 
+    func use(_ client: Client) -> Instance {
+        return Instance(client: client, interface: self)
+    }
+
+    struct Instance {
+        let client: Client
+        unowned var interface: APIInterface
+
+        private func clientify<R>(_ method: @escaping (Client) -> R) -> (() -> R) {
+            let client = self.client
+            return { return method(client) }
+        }
+
+        private func clientify<A, R>(_ method: @escaping (Client, A) -> R) -> ((A) -> R) {
+            let client = self.client
+            return { a in return method(client, a) }
+        }
+
+        private func clientify<A, B, R>(_ method: @escaping (Client, A, B) -> R) -> ((A, B) -> R) {
+            let client = self.client
+            return { a, b in return method(client, a, b) }
+        }
+
+        var talks: () -> Future<[PublicTalk]> { return clientify(interface.talks) }
+        var myTalks: (User) -> Future<[PublicTalk]> { return clientify(interface.myTalks) }
+        var usernames: () -> Future<[String]> { return clientify(interface.usernames) }
+        var connexion: (PublicUserRequest) -> Future<User> { return clientify(interface.connexion) }
+        var signin: (PublicUserRequest) -> Future<Void> { return clientify(interface.signin) }
+        var createTalk: (PublicTalkRequest, User) -> Future<Void> { return clientify(interface.createTalk) }
+    }
+
     func talks(client: Client) -> Future<[PublicTalk]> {
         let url = self.url("talk", "all")
         let decoder = self.basicDateDecoder
